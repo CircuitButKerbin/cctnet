@@ -1,7 +1,7 @@
 require("networkd.networklayer")
 
 ---@return IPv4Address ConfiguredIP
-function registerDHCP()
+function RegisterDHCP()
     TID = math.random(1, 1000000000)
     ConfiguredIP = nil;
     Modem:openPort(68)
@@ -17,7 +17,7 @@ function registerDHCP()
         clientIP = 0,
         options = {}
     }
-    local DHCPDiscoverPacket = EthernetII:new(Modem.mac, 0xFFFFFFFFFFFF, EthernetType.IPv4, IPv4.new(0, IPUtil.strtoaddr("255.255.255.255"), 17, IPv4Protocol.UDP, UDP.new(68, 67, DHCPDiscover)))
+    local DHCPDiscoverPacket = EthernetII:new(Modem.mac, 0xFFFFFFFFFFFF, EthernetType.IPv4, IPv4.new(0, IPv4.addressFromString("255.255.255.255"), 17, IPv4Protocol.UDP, UDP.new(68, 67, DHCPDiscover)))
     print("Sent DHCP Discover")
     DHCPDiscoverPacket:send()
     local progress = false
@@ -48,7 +48,7 @@ function registerDHCP()
                             }
                             DHCPRequest.options[DHCPOptions.RequestedIP] = ConfiguredIP
                             DHCPRequest.options[DHCPOptions.Server] = ipframe.source
-                            local DHCPRequestPacket = EthernetII:new(Modem.mac, packet.sourceMAC, EthernetType.IPv4, IPv4.new(0, IPUtil.strtoaddr("255.255.255.255"), 17, IPv4Protocol.UDP, UDP.new(68, 67, DHCPRequest)))
+                            local DHCPRequestPacket = EthernetII:new(Modem.mac, packet.sourceMAC, EthernetType.IPv4, IPv4.new(0, IPv4.addressFromString("255.255.255.255"), 17, IPv4Protocol.UDP, UDP.new(68, 67, DHCPRequest)))
                             print("Sent DHCP Request")
                             DHCPRequestPacket:send()
                             progress = true
@@ -72,7 +72,7 @@ function registerDHCP()
                     --[[@as DHCPMessage]]
                     local dhcppacket = ipframe.data.data
                     if dhcppacket.messageType == DHCPMessageType.Ack then
-                        print("Recieved DHCP Ack"   )
+                        print("Recieved DHCP Ack")
                         ConfiguredIP = dhcppacket.yourIP
                         progress = true
                         break
@@ -83,8 +83,10 @@ function registerDHCP()
     until progress;
     print("Acquired IP: " .. ConfiguredIP)
     --[[@as IPv4Address]]
-    ConfiguredIP = ConfiguredIP or error("DHCP failed to configure IP")
+    if ConfiguredIP == nil then
+        error("Failed to acquire IP")
+    end
     return ConfiguredIP;
 end
 
-print(xpcall(registerDHCP, debug.traceback))
+print(xpcall(RegisterDHCP, debug.traceback))

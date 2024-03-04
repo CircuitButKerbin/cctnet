@@ -1,4 +1,32 @@
+
+---@class bit32
+---@diagnostic disable-next-line
+local bit32 = bit32;
+
+---@class peripheral
+---@field find fun(name:string):table
+---@diagnostic disable-next-line 
+local peripheral = peripheral;
+
 ---@class networkd.modem
+---@field mac integer
+---@field device table
+---@field openPorts table<integer>
+---@field isWireless fun():boolean
+---@field openPort fun(self:networkd.modem, port:integer)
+---@field closePort fun(self:networkd.modem, port:integer)
+---@field closeAllPorts fun(self:networkd.modem)
+---@field transmit fun(self:networkd.modem, channel:integer, replyChannel:integer, message:any)
+---@field getModemEvent fun(self:networkd.modem):ModemEvent
+---@field new fun():networkd.modem
+
+---@class os
+---@field pullEvent fun(event:string):any
+---@field getComputerID fun():integer
+---@diagnostic disable-next-line
+local os = os;
+
+
 local function crc24(str)
     local i = 1
     local crc = 2 ^ 24 - 1

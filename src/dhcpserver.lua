@@ -9,7 +9,7 @@ IPv4TypetoString[IPv4Protocol.OSPF] = "OSPF"
 IPv4TypetoString[IPv4Protocol.SCTP] = "SCTP"
 
 function HostDHCPServer()
-    local DHCPAddress = IPUtil.strtoaddr("192.168.1.1")
+    local DHCPAddress = IPv4.addressFromString("192.168.1.1")
     ARPCache = {}
     AssignedAddresses = {}
     OngoingDHCP = {}
@@ -33,7 +33,7 @@ function HostDHCPServer()
                 if ipframe.protocol ~= IPv4Protocol.UDP then
                     goto pass
                 end
-                if ipframe.destination ~= IPUtil.strtoaddr("255.255.255.255") then
+                if ipframe.destination ~= IPv4.addressFromString("255.255.255.255") then
                     goto pass
                 end
                 ---@type DHCPMessage
@@ -41,7 +41,7 @@ function HostDHCPServer()
                 if dhcp.messageType == DHCPMessageType.Discover then
                     local offer;
                     repeat
-                        offer = IPUtil.strtoaddr("192.168.1." .. tostring(math.random(2, 254)))
+                        offer = IPv4.addressFromString("192.168.1." .. tostring(math.random(2, 254)))
                     until isAddressAvaliable()
                     OngoingDHCP[dhcp.transactionID] = {
                         OfferedIP = offer
@@ -100,7 +100,7 @@ function HostDHCPServer()
                     --[[@as ICMPPacket]]
                     local icmp = ipframe.data
                     if icmp.Type == ICMPType.EchoRequest then -- Ping
-                        local echo = EthernetII:new(Modem.mac, packet.sourceMAC, EthernetType.IPv4, IPv4:new(ipframe.destination, ipframe.source, 112, 1, ICMP:new(ICMPType.EchoReply, 0, {})))
+                        local echo = EthernetII:new(Modem.mac, packet.sourceMAC, EthernetType.IPv4, IPv4.new(ipframe.destination, ipframe.source, 112, 1, ICMP.new(ICMPType.EchoReply, 0, {})))
                         echo:send()
                     end
                 end
@@ -109,11 +109,12 @@ function HostDHCPServer()
             ---@type EthernetIIFrame
             local packet = event.message
             if packet.Type == EthernetType.ARP then
-                --[[@as ARPPacket]]
+                ---@type ARPPacket
+                ---@diagnostic disable-next-line 
                 local arp = packet.data
                 if arp.operation == ARPOperation.Request then
-                    if arp.destinationIPv4 == DHCPAddress then
-                        local reply = EthernetII:new(Modem.mac, packet.sourceMAC, EthernetType.ARP, ARP:new(ARPOperation.Reply, Modem.mac, arp.targetMAC, arp.targetIP, arp.sourceIP))
+                    if arp.targetIPv4 == DHCPAddress then
+                        local reply = EthernetII:new(Modem.mac, packet.sourceMAC, EthernetType.ARP, ARP.new(ARPOperation.Reply, Modem.mac, arp.targetMAC, arp.targetIPv4, arp.sourceIPv4))
                         reply:send()
                     end
                 end

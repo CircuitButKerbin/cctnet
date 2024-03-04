@@ -1,7 +1,34 @@
 require ("networkd.modem")
+Strict = {
+    ---@param e any
+    ---@return number
+    tonumber = function (e)
+        assert(tonumber(e) ~= nil, "Expected number, got " .. type(e) .. "\n" .. debug.traceback())
+        -- This is fine since if it's not a number, it will throw an error beforehand
+        ---@diagnostic disable-next-line 
+        return tonumber(e)
+    end,
+    ---@param e any
+    ---@param b number
+    ---@return number
+    tonumberbase = function (e,b)
+        assert(tonumber(e,b) ~= nil, "Expected number, got " .. type(e) .. "\n" .. debug.traceback())
+        return tonumber(e,b)
+    end
+}
+
+---@class bit32
+---@field band fun(a: number , b: number): number
+---@field bor fun(a: number, b: number): number
+---@field bxor fun(a: number, b: number): number
+---@field bnot fun(a: number): number
+---@field rshift fun(a: number, b: number): number
+---@field lshift fun(a: number, b: number): number
+---@diagnostic disable-next-line
+local bit32 = bit32;
 Modem:new()
----@alias IPv4Address integer The IPv4 address represented as a 32-bit integer
----@alias MACAddress integer The MAC address represented as a 48-bit integer
+---@alias IPv4Address number The IPv4 address represented as a 32-bit number
+---@alias MACAddress number The MAC address represented as a 48-bit number
 
 ---@enum IPv4Protocol
 IPv4Protocol = {
@@ -71,13 +98,13 @@ ICMPCode = {
 
 
 ---@class UDPPacket
----@field sourcePort integer
----@field destinationPort integer
+---@field sourcePort number
+---@field destinationPort number
 
 UDP = {
     ---Creates a new UDP packet
-    ---@param sourcePort integer
-    ---@param destinationPort integer
+    ---@param sourcePort number
+    ---@param destinationPort number
     ---@param data any | DHCPMessage
     ---@return UDPPacket
     new = function (sourcePort, destinationPort, data)
@@ -102,20 +129,20 @@ TCPFlags = {
 }
 
 ---@class TCPPacket
----@field sourcePort integer
----@field destinationPort integer
----@field flags integer
----@field sequenceNumber integer
----@field acknowledgmentNumber integer
+---@field sourcePort number
+---@field destinationPort number
+---@field flags number
+---@field sequenceNumber number
+---@field acknowledgmentNumber number
 ---@field data any
 
 TCP = {
     ---Creates a new TCP packet
-    ---@param sourcePort integer
-    ---@param destinationPort integer
-    ---@param flags integer
-    ---@param sequenceNumber integer
-    ---@param acknowledgmentNumber integer
+    ---@param sourcePort number
+    ---@param destinationPort number
+    ---@param flags number
+    ---@param sequenceNumber number
+    ---@param acknowledgmentNumber number
     ---@param data any
     ---@return TCPPacket
     new = function (sourcePort, destinationPort, flags, sequenceNumber, acknowledgmentNumber, data)
@@ -132,16 +159,16 @@ TCP = {
 
 ---@class ICMPPacket
 ---@field Type ICMPType
----@field code ICMPCode
+---@field code ICMPCode | integer
 ---@field data any 
 
-IMCP = {
+ICMP = {
     ---@param self ICMPPacket
     isError = function (self)
         return self.Type == ICMPType.DestinationUnreachable or self.Type == ICMPType.SourceQuench or self.Type == ICMPType.Redirect or self.Type == ICMPType.TimeExceeded or self.Type == ICMPType.ParameterProblem
     end,
     ---@param Type ICMPType
-    ---@param code ICMPCode
+    ---@param code ICMPCode | integer
     ---@param data any
     ---@return ICMPPacket
     new = function (Type, code, data)
@@ -154,11 +181,10 @@ IMCP = {
 }
 
 
-
 ---@class IPv4Packet
 ---@field source IPv4Address
 ---@field destination IPv4Address
----@field timeToLive integer
+---@field timeToLive number
 ---@field protocol IPv4Protocol
 ---@field data TCPPacket | UDPPacket | ICMPPacket
 
@@ -174,7 +200,7 @@ IPv4 = {
         assert(#parts == 4, "Invalid IP Specified: " .. address)
         local ipint = 0
         for i=1, #parts do
-            ipint = ipint + bit32.lshift(tonumber(parts[i]), (3-(i-1))*8)
+            ipint = ipint + bit32.lshift(Strict.tonumber(parts[i]), (3-(i-1))*8)
         end
         return ipint
     end,
@@ -191,7 +217,7 @@ IPv4 = {
     ---Creates a new IPv4 packet
     ---@param source IPv4Address
     ---@param destination IPv4Address
-    ---@param timeToLive integer
+    ---@param timeToLive number
     ---@param protocol IPv4Protocol
     ---@param data TCPPacket | UDPPacket | ICMPPacket
     ---@return IPv4Packet
@@ -209,9 +235,9 @@ IPv4 = {
 ---@class ARPPacket
 ---@field sourceIPv4 IPv4Address
 ---@field sourceMAC MACAddress
----@field destinationIPv4 IPv4Address
----@field destinationMAC MACAddress
----@field operation integer
+---@field targetIPv4 IPv4Address
+---@field targetMAC MACAddress
+---@field operation number
 
 ---@enum ARPOperation
 ARPOperation = {
@@ -222,17 +248,17 @@ ARPOperation = {
 ARP = {
     ---Creates a new ARP packet
     ---@param sourceIPv4 IPv4Address
-    ---@param sourceMAC string
-    ---@param destinationIPv4 IPv4Address
-    ---@param destinationMAC string
+    ---@param sourceMAC MACAddress
+    ---@param targetIPv4 IPv4Address
+    ---@param targetMAC MACAddress
     ---@param operation ARPOperation
     ---@return ARPPacket
-    new = function (sourceIPv4, sourceMAC, destinationIPv4, destinationMAC, operation)
+    new = function (sourceIPv4, sourceMAC, targetIPv4, targetMAC, operation)
         return {
             sourceIPv4 = sourceIPv4,
             sourceMAC = sourceMAC,
-            destinationIPv4 = destinationIPv4,
-            destinationMAC = destinationMAC,
+            destinationIPv4 = targetIPv4,
+            destinationMAC = targetMAC,
             operation = operation
         }
     end,
@@ -318,6 +344,7 @@ DHCPOptions = {
 
 IPUtil = {
     --convert an IP string (xxx.xxx.xxx.xxx) into the int
+    ---@deprecated Use IPv4.addressFromString
     strtoaddr = function (ip)
         local ipart = string.gmatch(ip, "[^%.]+")
         local parts = {}
@@ -326,12 +353,12 @@ IPUtil = {
         end
         assert(#parts == 4, "Invalid IP Specified: " .. ip)
         local ipint = 0
-        print(table.concat(parts,"."))
         for i=1, #parts do
-            ipint = ipint + bit32.lshift(tonumber(parts[i]), (3-(i-1))*8)
+            ipint = ipint + bit32.lshift(Strict.tonumber(parts[i]), (3-(i-1))*8)
         end
         return ipint
     end,
+    ---@deprecated Use IPv4.addressToString
     addrtostr = function (ip)
         local parts = {}
         for i=1, 4 do
@@ -341,9 +368,10 @@ IPUtil = {
     end
 }
 
+
 ---@class DHCPMessage
 ---@field messageType DHCPMessageType
----@field transactionID integer
+---@field transactionID number
 ---@field clientIP IPv4Address
 ---@field yourIP IPv4Address
 ---@field serverIP IPv4Address
@@ -461,8 +489,8 @@ NetworkDebug = {
             print("\tARP = {")
             print("\t\tsourceIPv4 = " .. NetworkDebug.ipToString(frame.data.sourceIPv4))
             print("\t\tsourceMAC = " .. NetworkDebug.macToString(frame.data.sourceMAC))
-            print("\t\tdestinationIPv4 = " .. NetworkDebug.ipToString(frame.data.destinationIPv4))
-            print("\t\tdestinationMAC = " .. NetworkDebug.macToString(frame.data.destinationMAC))
+            print("\t\ttargetIPv4 = " .. NetworkDebug.ipToString(frame.data.targetIPv4))
+            print("\t\ttargetMAC = " .. NetworkDebug.macToString(frame.data.targetMAC))
             print("\t\toperation = " .. frame.data.operation)
             print("\t}")
         end
