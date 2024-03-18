@@ -6,11 +6,11 @@ require "cctnet.lowlevel.modem"
 ---@overload fun(e:any):number
 local function stricttonumber(e, base)
     if (base == nil) then
-        assert(type(tonumber(e)) == "number", debug.traceback("bad argument #1 (no valid numerical representation)"))
+        assert(type(tonumber(e)) == "number", debug.traceback("bad argument #1 (no valid numerical representation for \"" .. tostring(e) .. "\")"))
         ---@diagnostic disable-next-line
         return tonumber(e) 
     else
-        assert(type(tonumber(e, base)) == "number", debug.traceback("bad argument #1 (no valid numerical representation)"))
+        assert(type(tonumber(e, base)) == "number", debug.traceback("bad argument #1 (no valid numerical representation for \"" .. tostring(e) .. "\")"))
         return tonumber(e, base)
     end
 end
@@ -70,19 +70,17 @@ MACAddress = {
             for i in tmp do
                 table.insert(parts, i)
             end
-            assert(#parts == 5, "Invalid mac : " .. mac)
+            assert(#parts == 6, "Invalid mac : " .. mac .. "(Parts : " .. #parts .. ")")
             mac = ""
-            for i = 1, 5 do
-                mac = mac .. string.format("%02X", stricttonumber(parts[i]))
+            for i = 1, 6 do
+                mac = mac .. string.format("%02X", stricttonumber(parts[i],16))
             end
-            mac = stricttonumber(mac, 16)
+            o.mac = stricttonumber(mac, 16)
         else
             assert(mac >= 0 and mac <= 0xFFFFFFFFFF, "Invalid mac : " .. mac)
             o.mac = mac
         end
-        o.new = nil -- Prevent creation of new instances from an instance
         local meta = {
-            __index = MACAddress,
             __tostring = MACAddress.__tostring,
             __eq = MACAddress.__eq
         }
@@ -135,7 +133,6 @@ EthernetII = {
         self.demagle = EthernetII.demangle
         self.send = EthernetII.send
         local meta = {
-            __index = EthernetII,
             __eq = EthernetII.__eq
         }
         --[[@as EthernetFrame]]
@@ -156,7 +153,6 @@ EthernetII = {
         o.Type = Type
         o.EthernetPayload = EthernetPayload
         ---@diagnostic disable-next-line: inject-field
-        o.new = nil
         local meta = {
             __index = EthernetII,
             __eq = EthernetII.__eq

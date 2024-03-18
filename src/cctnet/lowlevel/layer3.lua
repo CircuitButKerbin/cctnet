@@ -71,9 +71,8 @@ IPAddress = {
             assert(ip >= 0 and ip <= 0xFFFFFFFF, "Invalid IP : " .. ip)
             o.ip = ip
         end
-        o.new = nil -- Prevent creation of new instances from an instance
+         -- Prevent creation of new instances from an instance
         local meta = {
-            __index = IPAddress,
             __tostring = IPAddress.__tostring,
             __eq = IPAddress.__eq
         }
@@ -159,7 +158,7 @@ IPv4 = {
         o.ttl = ttl
         o.protocol = protocol
         o.payload = payload
-        o.new = nil -- Prevent creation of new instances from an instance
+         -- Prevent creation of new instances from an instance
         local meta = {
             __tostring = IPv4.__tostring,
             __eq = IPv4.__eq

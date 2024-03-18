@@ -20,9 +20,8 @@ UDP = {
         o.destinationPort = destinationPort
         o.payload = payload
         ---@diagnostic disable-next-line: inject-field
-        o.new = nil
+        
         local meta = {
-            __index = UDP,
             __eq = UDP.__eq
         }
         --[[@as iUDP]]
@@ -46,7 +45,6 @@ iTCPFlags = {
     SYN = false,
     FIN = false
 }
-
 
 ---@class iTCP : iPayload
 ---@field sourcePort integer
@@ -75,9 +73,8 @@ TCP = {
         o.flags = flags
         o.payload = payload
         ---@diagnostic disable-next-line: inject-field
-        o.new = nil
+        
         local meta = {
-            __index = TCP,
             __eq = TCP.__eq
         }
         --[[@as iTCP]]

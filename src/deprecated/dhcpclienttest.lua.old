@@ -6,6 +6,7 @@ parallel = parallel
 
 ---@return IPv4Address ConfiguredIP
 function RegisterDHCP()
+    ::retryDiscovery::
     local selectedServer = 0;
     local function handleOfferResponse()
         while true do
@@ -131,26 +132,30 @@ function RegisterDHCP()
     local DHCPDiscoverPacket = EthernetII:new(Modem.mac, 0xFFFFFFFFFFFF, EthernetType.IPv4, IPv4.new(0, IPv4.addressFromString("255.255.255.255"), 17, IPv4Protocol.UDP, UDP.new(68, 67, DHCPDiscover)))
     print("Sent DHCP Discover")
     DHCPDiscoverPacket:send()
-    local progress = false
+    local norep = false
 
-    local timeout = false
     parallel.waitForAny(function()
         handleOfferResponse()
     end,
     function()
-        os.sleep(2)
-        timeout = true
+        os.sleep(60)
+        norep = true
     end)
-    local timeout = false
+    if norep then
+        goto retryDiscovery
+    end
+    
     parallel.waitForAny(function()
         handleAcknowlegement()
     end,
     function()
-        os.sleep(2)
-        timeout = true
+        os.sleep(12)
+        timeout = timeout + 1
     end)
     if ConfiguredIP == nil then
         
+    elseif ConfiguredIP == 0 then
+
     end
     if (ARPProbe(Modem.mac, ConfiguredIP)) then
         ---@type DHCPMessage
