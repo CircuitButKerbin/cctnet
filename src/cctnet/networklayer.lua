@@ -1,3 +1,4 @@
+--[[
 require ("networkd.modem")
 Strict = {
     ---@param e any
@@ -25,11 +26,9 @@ Strict = {
 ---@field rshift fun(a: number, b: number): number
 ---@field lshift fun(a: number, b: number): number
 ---@diagnostic disable-next-line
-local bit32 = bit32;
-Modem:new()
----@alias IPv4Address number The IPv4 address represented as a 32-bit number
----@alias MACAddress number The MAC address represented as a 48-bit number
+bit32 = bit32;
 
+Modem:new()
 ---@enum IPv4Protocol
 IPv4Protocol = {
     ICMP =   1, -- Internet Control Message Protocol
@@ -497,3 +496,4 @@ NetworkDebug = {
         print("}")
     end
 }
+--]]

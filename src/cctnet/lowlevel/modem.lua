@@ -1,37 +1,10 @@
 
----@class bit32
----@diagnostic disable-next-line
-local bit32 = bit32;
-
----@class peripheral
----@field find fun(name:string):table
----@diagnostic disable-next-line 
-local peripheral = peripheral;
-
----@class networkd.modem
----@field mac integer
----@field device table
----@field openPorts table<integer>
----@field isWireless fun():boolean
----@field openPort fun(self:networkd.modem, port:integer)
----@field closePort fun(self:networkd.modem, port:integer)
----@field closeAllPorts fun(self:networkd.modem)
----@field transmit fun(self:networkd.modem, channel:integer, replyChannel:integer, message:any)
----@field getModemEvent fun(self:networkd.modem):ModemEvent
----@field new fun():networkd.modem
-
----@class os
----@field pullEvent fun(event:string):any
----@field getComputerID fun():integer
----@diagnostic disable-next-line
-local os = os;
-
-
 local function crc24(str)
     local i = 1
     local crc = 2 ^ 24 - 1
     local poly = 0xDF3261 
-
+    ---@diagnostic disable-next-line: undefined-global
+    local bit32 = bit32
     for k = string.len(str), 1, -1 do
         local byte = string.byte(str, i)
         crc = bit32.bxor(crc, byte)
@@ -49,32 +22,45 @@ local function crc24(str)
     return crc
 end
 
-
+---@class Modem
+---@field new fun(self:Modem):Modem
+---@field mac integer
+---@field device table
+---@field getModemEvent fun(self:Modem):ModemEvent
+---@field openPorts table<integer>
+---@field isWireless fun(self:Modem):boolean
+---@field openPort fun(self:Modem, port:integer)
+---@field closePort fun(self:Modem, port:integer)
+---@field closeAllPorts fun(self:Modem)
+---@field transmit fun(self:Modem, channel:integer, replyChannel:integer, message:any)
 Modem = {
     ---Initializes a new modem object
-    ---@return networkd.modem
     new = function (self)
         local o = self
+        ---@diagnostic disable-next-line: undefined-global
         local modem = peripheral.find("modem") or error("No modem found")
         if modem == nil then
-            error("networkd.modem requires a modem to be attached!")
+            error("Modem requir=es a modem to be attached!")
         end
         o.device = modem
+        ---@diagnostic disable-next-line: undefined-field
         local pchash = crc24(tostring(os.getComputerID()))
         local modemhash = crc24(tostring(modem))
+        ---@diagnostic disable-next-line: undefined-global
         pchash = bit32.band(pchash, 0xEFFFFF) -- unicast
         local mac = string.format("%X", pchash) .. string.format("%X", modemhash)
         o.mac = tonumber(mac, 16)
         return o
     end,
-    mac = nil;
+    mac = 0;
     ---@private
-    device = nil,
+    device = {},
     ---Blocking method that returns a ModemEvent once recieved
-    ---@param self networkd.modem
+    ---@param self Modem
     ---@return ModemEvent
     ---@nodiscard
     getModemEvent = function (self)
+        ---@diagnostic disable-next-line: undefined-field
         local eventData = table.pack(os.pullEvent("modem_message"))
         return {
             name = "modem_message",
@@ -89,37 +75,33 @@ Modem = {
     ---@type table<integer>
     openPorts = {},
     ---Returns whether the modem is wireless
-    ---@param self networkd.modem
+    ---@param self Modem
     ---@return boolean
     isWireless = function (self)
         return self.device.isWireless()
     end,
     ---Opens a port on the modem
-    ---@param self networkd.modem
+    ---@param self Modem
     ---@param port integer
     openPort = function (self, port)
         self.device.open(port)
-        table.insert(self.openPorts, port)
+        self.openPorts[port] = true
     end,
     ---Closes a port on the modem
-    ---@param self networkd.modem
+    ---@param self Modem
     ---@param port integer
     closePort = function (self, port)
         self.device.close(port)
-        for i, v in ipairs(self.openPorts) do
-            if v == port then
-                table.remove(self.openPorts, i)
-            end
-        end
+        self.openPorts[port] = nil
     end,
     ---Close all ports on the modem
-    ---@param self networkd.modem
+    ---@param self Modem
     closeAllPorts = function (self)
         self.device.closeAll()
         self.openPorts = {}
     end,
     ---Transmits a message on the modem
-    ---@param self networkd.modem
+    ---@param self Modem
     ---@param channel integer
     ---@param replyChannel integer
     ---@param message any
