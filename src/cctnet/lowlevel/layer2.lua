@@ -38,7 +38,7 @@ MACAddress = {
         if other.__type == "MACAddress" then
             return self.mac == other.mac
         end
-        error(debug.traceback("Cannot compare MACAddress with " .. type(other)))
+        error(string.format("attempt to compare MACAddress with %s", type(other)))
     end,
     ---@return string
     toString = function()
@@ -70,15 +70,17 @@ MACAddress = {
             for i in tmp do
                 table.insert(parts, i)
             end
-            assert(#parts == 6, "Invalid mac : " .. mac .. "(Parts : " .. #parts .. ")")
+            assert(#parts == 6, debug.traceback(string.format("bad argument #1 (value \'%s\' is not a valid string-formatted MAC address; Split returned %d parts.", mac, #parts)))
             mac = ""
             for i = 1, 6 do
                 mac = mac .. string.format("%02X", stricttonumber(parts[i],16))
             end
             o.mac = stricttonumber(mac, 16)
-        else
-            assert(mac >= 0 and mac <= 0xFFFFFFFFFF, "Invalid mac : " .. mac)
+        elseif type(mac) == "number" then
+            assert(mac >= 0 and mac <= 0xFFFFFFFFFF, debug.traceback(string.format("bad argument #1 (value \'%012Xh\' is outside the range of a uint48)", mac)))
             o.mac = mac
+        else
+            error(debug.traceback(string.format("bad argument #1 (value \'%s\' of type %s cannot be converted into a MACAddress)", tostring(mac), type(mac))))
         end
         local meta = {
             __tostring = MACAddress.__tostring,
@@ -138,11 +140,14 @@ EthernetII = {
         --[[@as EthernetFrame]]
         return setmetatable(self, meta)
     end,
+    toString = function (self)
+        
+    end,
     __eq = function (self, other)
         if other.__type == "EthernetII" then
             return self.source == other.source and self.destination == other.destination and self.Type == other.Type and self.EthernetPayload == other.EthernetPayload
         end
-        error(debug.traceback("Cannot compare EthernetII with " .. type(other)))
+        error(debug.traceback(string.format("attempt to compare EthernetIIFrame with %s", type(other))))
     end,
     new = function (source, destination, Type, EthernetPayload)
         ---@type EthernetFrame
@@ -164,9 +169,9 @@ EthernetII = {
     ---@param self EthernetFrame
     ---@param networkInterface Modem
     send = function (self, networkInterface)
-        assert(self.source.__type == "MACAddress", debug.traceback("Invalid source MAC"))
-        assert(self.destination.__type == "MACAddress", debug.traceback("Invalid destination MAC"))
-        assert(self.EthernetPayload ~= nil, debug.traceback("No payload"))
+        assert(self.source.__type == "MACAddress", debug.traceback(string.format("bad field \"source\" (MACAddress expected, got %s) in self while calling EthernetFrame:send()", type(self.source))))
+        assert(self.destination.__type == "MACAddress", debug.traceback(string.format("bad field \"destination\" (MACAddress expected, got %s) in self while calling EthernetFrame:send()", type(self.source))))
+        assert(self.EthernetPayload ~= nil, debug.traceback(string.format("bad field \"payload\" (object expected, got nil) in self while calling EthernetFrame:send()")))
         if self.EthernetPayload.__type == "IPv4" then
             ---@diagnostic disable-next-line: undefined-field
             local proto = self.EthernetPayload.protocol
@@ -180,6 +185,8 @@ EthernetII = {
         elseif self.EthernetPayload.__type == "ARP" then
             --port 1
             networkInterface:transmit(1, 1, self.EthernetPayload)
+        else
+            networkInterface:transmit(0, 0, self.EthernetPayload)
         end
     end
 }
