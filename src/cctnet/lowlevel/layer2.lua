@@ -15,6 +15,16 @@ local function stricttonumber(e, base)
     end
 end
 
+local rangelessHex = function (number)
+    local chars = "0123456789ABCDEF"
+    local result = ""
+    for i = 1, 12 do
+        local char = string.sub(chars, number % 16 + 1, number % 16 + 1)
+        result = char .. result
+        number = math.floor(number / 16)
+    end
+    return result
+end
 ---@class MACAddress
 ---@field mac integer
 ---@field toString fun():string
@@ -43,13 +53,13 @@ MACAddress = {
     ---@return string
     toString = function()
         local result;
-        local string = string.format("%012X", MACAddress.mac)
+        local str = rangelessHex(MACAddress.mac)
         for i = 1, 6 do
-            local byte = stricttonumber(string:sub(i * 2 - 1, i * 2), 16)
+            local byte = stricttonumber(string.sub(str, i * 2 - 1, i * 2), 16)
             if i == 1 then
                 result = string.format("%02X", byte)
             else
-                result = result .. ":" .. string.format("%02X", byte)
+                result = result .. ":" .. str.format("%02X", byte)
             end
         end 
         return result
@@ -70,17 +80,17 @@ MACAddress = {
             for i in tmp do
                 table.insert(parts, i)
             end
-            assert(#parts == 6, debug.traceback(string.format("bad argument #1 (value \'%s\' is not a valid string-formatted MAC address; Split returned %d parts.", mac, #parts)))
+            assert(#parts == 6, debug.traceback(string.format("bad argument #1 to 'MACAddres.new' (value \'%s\' is not a valid string-formatted MAC address; Split returned %d parts.", mac, #parts)))
             mac = ""
             for i = 1, 6 do
                 mac = mac .. string.format("%02X", stricttonumber(parts[i],16))
             end
             o.mac = stricttonumber(mac, 16)
         elseif type(mac) == "number" then
-            assert(mac >= 0 and mac <= 0xFFFFFFFFFF, debug.traceback(string.format("bad argument #1 (value \'%012Xh\' is outside the range of a uint48)", mac)))
+            assert(0xFFffFFFFffFF >= mac and mac >= 0, debug.traceback(string.format("bad argument #1 to 'MACAddres.new' (value \'%sh\' (%s) is outside the range of a uint48)", rangelessHex(mac), tostring(mac))))
             o.mac = mac
         else
-            error(debug.traceback(string.format("bad argument #1 (value \'%s\' of type %s cannot be converted into a MACAddress)", tostring(mac), type(mac))))
+            error(debug.traceback(string.format("bad argument #1 to 'MACAddres.new' (value \'%s\' of type %s cannot be converted into a MACAddress)", tostring(mac), type(mac))))
         end
         local meta = {
             __tostring = MACAddress.__tostring,

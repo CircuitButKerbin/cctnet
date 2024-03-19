@@ -18,8 +18,8 @@ local bit32 = bit32
 
 ---@class IPAddress
 ---@field ip integer
----@field toString fun():string
----@field toInteger fun():integer
+---@field toString fun(self:IPAddress):string
+---@field toInteger fun(self:IPAddress):integer
 ---@field new fun(ip:integer|string):IPAddress
 IPAddress = {
     __type = "IPAddress",
@@ -36,13 +36,13 @@ IPAddress = {
         if other.__type == "IPAddress" then
             return self.ip == other.ip
         end
-        error(debug.traceback("Cannot compare IPAddress with " .. type(other)))
+        error(debug.traceback("attempt to compare IPAddress with" .. type(other)))
     end,
     ---@return string
-    toString = function()
+    toString = function(self)
         local result;
         for i = 1, 4 do
-            local byte = bit32.rshift(bit32.band(IPAddress.ip, bit32.lshift(0xFF, (i - 1) * 8)), (i - 1) * 8)
+            local byte = bit32.rshift(bit32.band(self.ip, bit32.lshift(0xFF, ((5-i) - 1) * 8)), ((5-i) - 1) * 8)
             if i == 1 then
                 result = tostring(byte)
             else
@@ -52,26 +52,31 @@ IPAddress = {
         return result
     end,
     ---@return integer
-    toInteger = function()
-        return IPAddress.ip
+    toInteger = function(self)
+        return self.ip
     end,
     ---@param ip integer|string
     ---@return IPAddress
     ---@nodiscard
     new = function(ip)
-        local o = IPAddress
+        local o = {
+            ip = 0,
+            toString = IPAddress.toString,
+            toInteger = IPAddress.toInteger
+        }
         if type(ip) == "string" then
             local parts = {string.match(ip, "(%d+)%.(%d+)%.(%d+)%.(%d+)")}
-            assert(#parts == 4, "Invalid IP : " .. ip)
+            assert(#parts == 4, string.format("bad argument #1 to 'IPAddress.new (value %s is not a valid string formatted IP address; Split returned %d parts)'", ip, #parts))
             o.ip = 0
             for i = 1, 4 do
-                o.ip = bit32.bor(o.ip, bit32.lshift(stricttonumber(parts[i]), (i - 1) * 8))
+                o.ip = bit32.bor(o.ip, bit32.lshift(stricttonumber(parts[i]), ((5-i) - 1) * 8))
             end
-        else
-            assert(ip >= 0 and ip <= 0xFFFFFFFF, "Invalid IP : " .. ip)
+        elseif type(ip) == "number" then
+            assert(ip >= 0 and ip <= 0xFFFFFFFF, "bad argument #1 to 'IPAddress.new' (value out of range of a u32)")
             o.ip = ip
+        else
+            error(debug.traceback(string.format("bad argument #1 to 'IPAddress.new' (value of type %s is not a valid IP address representation)", type(ip))))
         end
-         -- Prevent creation of new instances from an instance
         local meta = {
             __tostring = IPAddress.__tostring,
             __eq = IPAddress.__eq
@@ -133,9 +138,10 @@ IPv4 = {
         if other.__type == "IPv4" then
             return self.source == other.source and self.destination == other.destination and self.ttl == other.ttl and self.protocol == other.protocol and self.payload == other.payload
         end
-        error(debug.traceback("Cannot compare IPv4 with " .. type(other) .. " : " .. tostring(other.__type)))
+        error(debug.traceback("attempt to compare IPv4Packet with " .. type(other)))
     end,
     __tostring = function(self)
+        ---#TODO update to new format
         return "IPv4: " .. self.source:toString() .. " -> " .. self.destination:toString() .. " Protocol: " .. self.protocol:toString() .. " TTL: " .. tostring(self.ttl)
     end,
     __type = "IPv4",
@@ -152,13 +158,13 @@ IPv4 = {
     ---@param payload iPayload
     ---@return iIPv4
     new = function(source, destination, ttl, protocol, payload)
-        local o = IPv4
-        o.source = source
-        o.destination = destination
-        o.ttl = ttl
-        o.protocol = protocol
-        o.payload = payload
-         -- Prevent creation of new instances from an instance
+        local o = {
+            source = source,
+            destination = destination,
+            ttl = ttl,
+            protocol = protocol,
+            payload = payload
+        }
         local meta = {
             __tostring = IPv4.__tostring,
             __eq = IPv4.__eq
