@@ -141,14 +141,20 @@ IPv4 = {
         error(debug.traceback("attempt to compare IPv4Packet with " .. type(other)))
     end,
     __tostring = function(self)
-        ---#TODO update to new format
-        return "IPv4: " .. self.source:toString() .. " -> " .. self.destination:toString() .. " Protocol: " .. self.protocol:toString() .. " TTL: " .. tostring(self.ttl)
+        assert(self.__type == "IPv4", "bad argument #1 to 'IPv4.toString' (IPv4 expected, got " .. self.__type .. ")")
+        return string.format("IPv4Packet [%s -> %s] {Type:%s, TTL:%d, Payload:%s}", self.source:toString(), self.destination:toString(), IPv4Protocol.toString(self.protocol), self.ttl, tostring(self.payload))
     end,
     __type = "IPv4",
     ---@param self iIPv4
     ---@return iIPv4
     demangle = function(self)
-        ---#TODO: Implement
+        self.demangle = IPv4.demangle
+        local meta = {
+            __eq = IPv4.__eq,
+            __tostring = IPv4.__tostring
+        }
+        --[[@as iIPv4]]
+        self = setmetatable(self, meta)
         return self
     end,
     ---@param source IPAddress
@@ -158,6 +164,12 @@ IPv4 = {
     ---@param payload iPayload
     ---@return iIPv4
     new = function(source, destination, ttl, protocol, payload)
+        assert(type(source) == "table", "bad argument #1 to 'IPv4.new' (table expected, got " .. type(source) .. ")")
+        assert(type(destination) == "table", "bad argument #2 to 'IPv4.new' (table expected, got " .. type(destination) .. ")")
+        assert(source.__type == "IPAddress", "bad argument #1 to 'IPv4.new' (IPAddress expected, got " .. source.__type .. ")")
+        assert(destination.__type == "IPAddress", "bad argument #2 to 'IPv4.new' (IPAddress expected, got " .. destination.__type .. ")")
+        assert(ttl >= 0 and ttl <= 255, "bad argument #3 to 'IPv4.new' (TTL must be between 0 and 255)")
+        assert(protocol >= 0 and protocol <= 255, "bad argument #4 to 'IPv4.new' (Protocol must be between 0 and 255)")
         local o = {
             source = source,
             destination = destination,

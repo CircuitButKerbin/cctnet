@@ -1,4 +1,4 @@
-require "cctnet.lowlevel.layer4"
+require ".cctnet.lowlevel.layer4"
 ---@class iTestable
 ---@field test fun(self):boolean
 
@@ -88,4 +88,5 @@ TestSuit:add(MethodTest.new("MACAddress.new(\"12:34:56:78:9A:BC\") == MACAddress
 TestSuit:add(MethodTest.new("IPAddress.new(0)", function (result) return tostring(result) == "0.0.0.0" end, IPAddress.new, 0))
 TestSuit:add(MethodTest.new("IPAddress.new(0x12345678)", function (result) return tostring(result) == "18.52.86.120" end, IPAddress.new, 0x12345678))
 TestSuit:add(MethodTest.new("IPAddress.new(\"18.52.86.120\")", function (result) return tostring(result) == "18.52.86.120" end, IPAddress.new, "18.52.86.120"))
+TestSuit:add(MethodTest.new("IPv4.new(IPAddress.new(0), IPAddress.new(0), 0, 1, nil)", function (result) return tostring(result) == "IPv4Packet [0.0.0.0 -> 0.0.0.0] {Type:ICMP, TTL:0, Payload:nil}" end, IPv4.new, IPAddress.new(0), IPAddress.new(0), 0, 1, nil))
 TestSuit:run()
