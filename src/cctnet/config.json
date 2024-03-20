@@ -1,0 +1,8 @@
+{
+    "hostname":"desktop-%s",
+    "ip_assignment_method":"dhcp",
+    "static_ip":"0.0.0.0",
+    "default_gateway":"0.0.0.0",
+    "subnet_mask":"0.0.0.0",
+    "dns_server":"0.0.0.0"
+}
